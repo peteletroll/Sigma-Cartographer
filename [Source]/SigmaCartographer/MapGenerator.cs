@@ -590,9 +590,9 @@ namespace SigmaCartographerPlugin
                                 }
                             }
                         }
-                        catch
+                        catch (Exception e)
                         {
-                            Debug.LOG("MapGenerator", "ERROR - Failed to export tile " + current + ".");
+                            Debug.LOG(e.Message + "\n" + e.StackTrace);
                             return;
                         }
                     }
@@ -607,8 +607,9 @@ namespace SigmaCartographerPlugin
 
         internal static void ExportPQSMap(ref Texture2D texture, string folder, string fileName)
         {
-            Directory.CreateDirectory(exportFolder + folder);
-            File.WriteAllBytes(exportFolder + folder + fileName, texture.EncodeToPNG());
+            string fullPath = exportFolder + folder + fileName;
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            File.WriteAllBytes(fullPath, texture.EncodeToPNG());
         }
 
         internal static void CleanUp()
