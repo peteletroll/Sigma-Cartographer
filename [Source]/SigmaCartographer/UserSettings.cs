@@ -26,8 +26,9 @@ namespace SigmaCartographerPlugin
             string path = Assembly.GetExecutingAssembly().Location.Replace('\\', '/');
             while (path.Substring(1).Contains("GameData/"))
                 path = path.Substring(1 + path.Substring(1).IndexOf("GameData/"));
-            if (path != folder + "Plugins/" + Path.GetFileName(path))
-                UnityEngine.Debug.Log(Debug.Tag + " WARNING: Incorrect plugin location => " + path);
+            string expectedPath = folder + "Plugins/" + Path.GetFileName(path);
+            if (path != expectedPath)
+                UnityEngine.Debug.Log(Debug.Tag + " WARNING: Incorrect plugin location => " + path + " != " + expectedPath);
 
             if (!Directory.Exists(folder))
             {
