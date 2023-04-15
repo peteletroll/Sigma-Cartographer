@@ -215,6 +215,8 @@ namespace SigmaCartographerPlugin
 
         internal static void GeneratePQSMaps(string subfolder = "", bool split = false)
         {
+            Debug.LOG("GeneratePQSMaps", "BODY " + body?.name);
+
             // If no exports are required, end here
             if (!exportAny && !exportBiomeMap) return;
 
@@ -238,13 +240,16 @@ namespace SigmaCartographerPlugin
             // Textures
             try
             {
-                heightMap = new Texture2D(tile, Math.Min(tile, width / 2), TextureFormat.ARGB32, true);
-                normalMap = new Texture2D(tile, Math.Min(tile, width / 2), TextureFormat.ARGB32, true);
-                slopeMap = new Texture2D(tile, Math.Min(tile, width / 2), TextureFormat.RGB24, true);
-                colorMap = new Texture2D(tile, Math.Min(tile, width / 2), TextureFormat.ARGB32, true);
-                oceanMap = new Texture2D(tile, Math.Min(tile, width / 2), TextureFormat.ARGB32, true);
-                biomeMap = new Texture2D(tile, Math.Min(tile, width / 2), TextureFormat.RGB24, true);
-                satelliteMap = new Texture2D(tile, Math.Min(tile, width / 2), TextureFormat.RGB24, true);
+                int w = tile;
+                int h = Math.Min(tile, width / 2);
+                Debug.LOG("MapGenerator", "TEXTURES " + w + "x" + h);
+                heightMap = new Texture2D(w, h, TextureFormat.ARGB32, true);
+                normalMap = new Texture2D(w, h, TextureFormat.ARGB32, true);
+                slopeMap = new Texture2D(w, h, TextureFormat.RGB24, true);
+                colorMap = new Texture2D(w, h, TextureFormat.ARGB32, true);
+                oceanMap = new Texture2D(w, h, TextureFormat.ARGB32, true);
+                biomeMap = new Texture2D(w, h, TextureFormat.RGB24, true);
+                satelliteMap = new Texture2D(w, h, TextureFormat.RGB24, true);
             }
             catch
             {
@@ -568,25 +573,25 @@ namespace SigmaCartographerPlugin
                                 if (exportSatelliteHeight)
                                 {
                                     CreateSatelliteMap(ref heightMap, ref normalMap, ref satelliteMap);
-                                    ExportPQSMap(ref satelliteMap, subfolder + "SatelliteHeight/", fileName);
+                                    ExportPQSMap(ref satelliteMap, subfolder + "SatelliteHeight/", folder + fileName);
                                 }
 
                                 if (exportSatelliteSlope)
                                 {
                                     CreateSatelliteMap(ref slopeMap, ref normalMap, ref satelliteMap);
-                                    ExportPQSMap(ref satelliteMap, subfolder + "SatelliteSlope/", fileName);
+                                    ExportPQSMap(ref satelliteMap, subfolder + "SatelliteSlope/", folder + fileName);
                                 }
 
                                 if (exportSatelliteMap)
                                 {
                                     CreateSatelliteMap(ref colorMap, ref normalMap, ref satelliteMap);
-                                    ExportPQSMap(ref satelliteMap, subfolder + "SatelliteMap/", fileName);
+                                    ExportPQSMap(ref satelliteMap, subfolder + "SatelliteMap/", folder + fileName);
                                 }
 
                                 if (exportSatelliteBiome)
                                 {
                                     CreateSatelliteMap(ref biomeMap, ref normalMap, ref satelliteMap);
-                                    ExportPQSMap(ref satelliteMap, subfolder + "SatelliteBiome/", fileName);
+                                    ExportPQSMap(ref satelliteMap, subfolder + "SatelliteBiome/", folder + fileName);
                                 }
                             }
                         }
@@ -608,6 +613,7 @@ namespace SigmaCartographerPlugin
         internal static void ExportPQSMap(ref Texture2D texture, string folder, string fileName)
         {
             string fullPath = exportFolder + folder + fileName;
+            Debug.LOG("ExportPQSMap", "EXPORTING " + fullPath);
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
             File.WriteAllBytes(fullPath, texture.EncodeToPNG());
         }
