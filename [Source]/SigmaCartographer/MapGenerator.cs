@@ -278,11 +278,6 @@ namespace SigmaCartographerPlugin
                 return;
             }
 
-            // Edges
-            int? firstY = null;
-            int? lastY = null;
-
-
             // reset current
             current = 0;
 
@@ -394,12 +389,6 @@ namespace SigmaCartographerPlugin
                                                 double latP = ((j + y + 1) * 360d / width - LAToffset) % 180d - 90d;
                                                 if (latP < -90) latP += 180;
 
-                                                if (latN - lat > 90)
-                                                    firstY = y;
-
-                                                if (lat - latP > 90)
-                                                    lastY = y;
-
                                                 terrainHeightValues[((y + 1) * (tile + 2)) + (x + 1)] = height * pqs.radiusDelta;
                                             }
                                         }
@@ -466,7 +455,7 @@ namespace SigmaCartographerPlugin
                             }
                             if (exportNormalMap || exportSlopeMap || satelliteAny)
                             {
-                                CalculateSlope(terrainHeightValues, pqs, firstY, lastY, ref normalMap, ref slopeMap);
+                                CalculateSlope(terrainHeightValues, pqs, ref normalMap, ref slopeMap);
                                 normalMap.Apply();
                                 slopeMap.Apply();
                             }
@@ -656,10 +645,8 @@ namespace SigmaCartographerPlugin
             return from || to || tile || (printTile.Count == 0 && printFrom == null && printTo == null);
         }
 
-        static void CalculateSlope(double[] normalMapValues, PQS pqs, int? firstY, int? lastY, ref Texture2D normalMap, ref Texture2D slopeMap)
+        static void CalculateSlope(double[] normalMapValues, PQS pqs, ref Texture2D normalMap, ref Texture2D slopeMap)
         {
-            Debug.LOG("CalculateSlope", "firstY=" + firstY + " lastY=" + lastY);
-
             double dS = pqs.radius * 2 * Math.PI / width;
 
             for (int y = 0; y < tile; y++)
@@ -668,55 +655,36 @@ namespace SigmaCartographerPlugin
 
                 for (var x = 0; x < tile; x++)
                 {
-                    // force slope = 0 at the poles
-                    if (false && (y == firstY || y == lastY))
+                    int xN = x - 1;
+                    int xP = x + 1;
+
+                    int yN = y > 0 ? y - 1 : 0;
+                    int yP = y < tile - 1 ? y + 1 : tile - 1;
+
+                    // shift all by one since `normalMapValues` has an extra frame of 1 pixel
+                    double dX = normalMapValues[((y + 1) * (tile + 2)) + (xP + 1)] - normalMapValues[((y + 1) * (tile + 2)) + (xN + 1)];
+                    double dY = normalMapValues[((yP + 1) * (tile + 2)) + (x + 1)] - normalMapValues[((yN + 1) * (tile + 2)) + (x + 1)];
+
+                    if (exportNormalMap || satelliteAny)
                     {
-                        if (exportNormalMap || satelliteAny)
-                        {
-                            if (y == firstY)
-                                normalMap.SetPixel(x, y, new Color(0.5f, 0.5f, 0.5f, 0.5f));
+                        double slopeX = (1 + dX / Math.Pow(dX * dX + dS * dS, 0.5) * normalStrength) / 2;
+                        double slopeY = (1 - dY / Math.Pow(dY * dY + dS * dS, 0.5) * normalStrength) / 2;
 
-                            if (y == lastY)
-                                normalMap.SetPixel(x, y, new Color(0.5f, 0.5f, 0.5f, 0.5f));
-                        }
-
-                        if (exportSlopeMap || exportSatelliteSlope)
-                            slopeMap.SetPixel(x, y, slopeMin);
+                        normalMap.SetPixel(x, y, new Color((float)slopeY, (float)slopeY, (float)slopeY, (float)slopeX));
                     }
-                    // otherwise calculate it from the terrain
-                    else
+
+                    if (exportSlopeMap || exportSatelliteSlope)
                     {
-                        int xN = x - 1;
-                        int xP = x + 1;
+                        Vector3d vX = new Vector3d(dS, 0, dX);
+                        Vector3d vY = new Vector3d(0, dS, dY);
 
-                        int yN = y > 0 ? y - 1 : 0;
-                        int yP = y < tile - 1 ? y + 1 : tile - 1;
+                        Vector3d n = Vector3d.Cross(vX, vY);
 
-                        // shift all by one since `normalMapValues` has an extra frame of 1 pixel
-                        double dX = normalMapValues[((y + 1) * (tile + 2)) + (xP + 1)] - normalMapValues[((y + 1) * (tile + 2)) + (xN + 1)];
-                        double dY = normalMapValues[((yP + 1) * (tile + 2)) + (x + 1)] - normalMapValues[((yN + 1) * (tile + 2)) + (x + 1)];
+                        double slope = Vector3d.Angle(new Vector3d(0, 0, 1), n) / 90d;
 
-                        if (exportNormalMap || satelliteAny)
-                        {
-                            double slopeX = (1 + dX / Math.Pow(dX * dX + dS * dS, 0.5) * normalStrength) / 2;
-                            double slopeY = (1 - dY / Math.Pow(dY * dY + dS * dS, 0.5) * normalStrength) / 2;
+                        if (slope > 1) slope = 2 - slope;
 
-                            normalMap.SetPixel(x, y, new Color((float)slopeY, (float)slopeY, (float)slopeY, (float)slopeX));
-                        }
-
-                        if (exportSlopeMap || exportSatelliteSlope)
-                        {
-                            Vector3d vX = new Vector3d(dS, 0, dX);
-                            Vector3d vY = new Vector3d(0, dS, dY);
-
-                            Vector3d n = Vector3d.Cross(vX, vY);
-
-                            double slope = Vector3d.Angle(new Vector3d(0, 0, 1), n) / 90d;
-
-                            if (slope > 1) slope = 2 - slope;
-
-                            slopeMap.SetPixel(x, y, Color.Lerp(slopeMin, slopeMax, (float)slope));
-                        }
+                        slopeMap.SetPixel(x, y, Color.Lerp(slopeMin, slopeMax, (float)slope));
                     }
                 }
             }
@@ -735,9 +703,11 @@ namespace SigmaCartographerPlugin
                     satelliteMap.SetPixel(x, y, color);
                 }
             }
+            /*
             satelliteMap.SetPixel(0, 0, Color.red);
             satelliteMap.SetPixel(w - 1, 0, Color.green);
             satelliteMap.SetPixel(0, h - 1, Color.blue);
+            */
         }
     }
 }
