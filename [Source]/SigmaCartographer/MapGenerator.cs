@@ -497,6 +497,8 @@ namespace SigmaCartographerPlugin
                         string folder = leaflet ? (position % (width / tile) + "/") : "";
                         string fileName = leaflet ? (position / (width / tile)) + ".png" : "Tile" + position.ToString("D4") + ".png";
 
+                        Debug.LOG("GeneratePQSMaps", "TILE " + folder + fileName);
+
                         // Export
                         try
                         {
@@ -656,6 +658,8 @@ namespace SigmaCartographerPlugin
 
         static void CalculateSlope(double[] normalMapValues, PQS pqs, int? firstY, int? lastY, ref Texture2D normalMap, ref Texture2D slopeMap)
         {
+            Debug.LOG("CalculateSlope", "firstY=" + firstY + " lastY=" + lastY);
+
             double dS = pqs.radius * 2 * Math.PI / width;
 
             for (int y = 0; y < tile; y++)
@@ -665,7 +669,7 @@ namespace SigmaCartographerPlugin
                 for (var x = 0; x < tile; x++)
                 {
                     // force slope = 0 at the poles
-                    if (y == firstY || y == lastY)
+                    if (false && (y == firstY || y == lastY))
                     {
                         if (exportNormalMap || satelliteAny)
                         {
@@ -685,8 +689,8 @@ namespace SigmaCartographerPlugin
                         int xN = x - 1;
                         int xP = x + 1;
 
-                        int yN = y - 1;
-                        int yP = y + 1;
+                        int yN = y > 0 ? y - 1 : 0;
+                        int yP = y < tile - 1 ? y + 1 : tile - 1;
 
                         // shift all by one since `normalMapValues` has an extra frame of 1 pixel
                         double dX = normalMapValues[((y + 1) * (tile + 2)) + (xP + 1)] - normalMapValues[((y + 1) * (tile + 2)) + (xN + 1)];
@@ -720,14 +724,20 @@ namespace SigmaCartographerPlugin
 
         internal static void CreateSatelliteMap(ref Texture2D baseMap, ref Texture2D normalMap, ref Texture2D satelliteMap)
         {
-            for (int y = 0; y < satelliteMap.height; y++)
+            int h = satelliteMap.height;
+            int w = satelliteMap.width;
+            for (int y = 0; y < h; y++)
             {
-                for (int x = 0; x < satelliteMap.width; x++)
+                for (int x = 0; x < w; x++)
                 {
                     float shadow = normalMap.GetPixel(x, y).a - 0.5f;
-                    satelliteMap.SetPixel(x, y, Color.Lerp(baseMap.GetPixel(x, y), shadow > 0 ? Color.black : Color.white, Math.Abs(shadow)));
+                    Color color = Color.Lerp(baseMap.GetPixel(x, y), shadow > 0 ? Color.black : Color.white, Math.Abs(shadow));
+                    satelliteMap.SetPixel(x, y, color);
                 }
             }
+            satelliteMap.SetPixel(0, 0, Color.red);
+            satelliteMap.SetPixel(w - 1, 0, Color.green);
+            satelliteMap.SetPixel(0, h - 1, Color.blue);
         }
     }
 }
