@@ -37,7 +37,7 @@ namespace SigmaCartographerPlugin
             {
                 texture.SetPixels(x, 0, 1, texture.height, texture.GetPixels(x, 0, 1, texture.height).Reverse().ToArray());
             }
-            texture.Apply();
+            // texture.Apply();
         }
 
         internal static void FlipH(ref Texture2D texture)
@@ -46,7 +46,7 @@ namespace SigmaCartographerPlugin
             {
                 texture.SetPixels(0, y, texture.width, 1, texture.GetPixels(0, y, texture.width, 1).Reverse().ToArray());
             }
-            texture.Apply();
+            // texture.Apply();
         }
 
         static Texture2D _black;
@@ -58,7 +58,7 @@ namespace SigmaCartographerPlugin
                 {
                     _black = new Texture2D(1, 1);
                     _black.SetPixel(0, 0, new Color(0, 0, 0, 1));
-                    _black.Apply();
+                    // _black.Apply();
                 }
 
                 return _black;

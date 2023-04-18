@@ -451,28 +451,28 @@ namespace SigmaCartographerPlugin
                             if (exportHeightMap || exportSatelliteHeight)
                             {
                                 heightMap.SetPixels(heightMapValues);
-                                heightMap.Apply();
+                                // heightMap.Apply();
                             }
                             if (exportNormalMap || exportSlopeMap || satelliteAny)
                             {
                                 CalculateSlope(terrainHeightValues, pqs, ref normalMap, ref slopeMap);
-                                normalMap.Apply();
-                                slopeMap.Apply();
+                                // normalMap.Apply();
+                                // slopeMap.Apply();
                             }
                             if (exportColorMap || exportSatelliteMap)
                             {
                                 colorMap.SetPixels(colorMapValues);
-                                colorMap.Apply();
+                                // colorMap.Apply();
                             }
                             if (exportOceanMap)
                             {
                                 oceanMap.SetPixels(oceanMapValues);
-                                oceanMap.Apply();
+                                // oceanMap.Apply();
                             }
                             if (exportBiomeMap || exportSatelliteBiome)
                             {
                                 biomeMap.SetPixels(biomeMapValues);
-                                biomeMap.Apply();
+                                // biomeMap.Apply();
                             }
                         }
                         catch
