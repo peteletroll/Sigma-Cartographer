@@ -46,7 +46,9 @@ namespace SigmaCartographerPlugin
 
         static bool alpha = false;
         static bool oceanFloor = true;
-        static Color oceanColor = new Color(0.1f, 0.1f, 0.2f, 1f);
+        static Color? oceanColor = new Color(0.1f, 0.1f, 0.2f, 1f);
+        static Color oceanColorDefault = new Color(0.1f, 0.1f, 0.2f, 1f);
+        static Color landColor = new Color(0, 0, 0, 0);
         static double LAToffset = 0;
         static double LONoffset = 0;
         static List<KeyValuePair<double, Color>> altitudeColor = null;
@@ -123,7 +125,8 @@ namespace SigmaCartographerPlugin
 
             if (!TryParse.Color(node.GetValue("oceanColor"), out oceanColor))
             {
-                oceanColor = body?.pqsController?.mapOceanColor ?? new Color(0.1f, 0.1f, 0.2f, 1f);
+                oceanColor = body?.pqsController?.mapOceanColor ?? oceanColorDefault;
+                Debug.LOG("LoadSettings", nameof(oceanColor) + " = " + oceanColor);
             }
 
             if (!double.TryParse(node.GetValue("LAToffset"), out LAToffset))
@@ -402,12 +405,13 @@ namespace SigmaCartographerPlugin
                                                 // Adjust the Color
                                                 Color color = data.vertColor.A(1);
 
+                                                bool isOcean = body.ocean && data.vertHeight <= pqs.radius;
                                                 if (!oceanFloor)
                                                 {
-                                                    if (data.vertHeight > pqs.radius)
-                                                        color.a = alpha ? 0 : 1;
+                                                    if (isOcean)
+                                                        color = oceanColor ?? oceanColorDefault;
                                                     else
-                                                        color = oceanColor;
+                                                        color.a = alpha ? 0 : 1;
                                                 }
 
                                                 // Set the Pixels
@@ -423,7 +427,7 @@ namespace SigmaCartographerPlugin
                                         if (body.ocean && exportOceanMap && x > -1 && y > -1 && x < tile && y < tile)
                                         {
                                             // Adjust the Color
-                                            Color color = data.vertHeight < pqs.radius ? oceanColor : new Color(0, 0, 0, 0);
+                                            Color color = data.vertHeight < pqs.radius ? (oceanColor ?? oceanColorDefault) : landColor;
 
                                             // Set the Pixels
                                             oceanMapValues[(y * tile) + x] = color;
@@ -551,12 +555,17 @@ namespace SigmaCartographerPlugin
 
                                 ExportPQSMap(ref biomeMap, subfolder + "BiomeMap/", folder + fileName);
 
-                                List<string> attributes = new string[] { "BiomeMap info", "", "Body = " + body.transform.name }.ToList();
-                                foreach (var biome in body.BiomeMap.Attributes)
+                                try
                                 {
-                                    attributes.Add("Biome =\t" + biome.name + "\t" + biome.mapColor);
+                                    List<string> attributes = new string[] { "BiomeMap info", "", "Body = " + body.transform.name }.ToList();
+                                    foreach (var biome in body.BiomeMap.Attributes)
+                                    {
+                                        attributes.Add("Biome =\t" + biome.name + "\t" + biome.mapColor);
+                                    }
+                                    File.WriteAllLines(exportFolder + subfolder + "BiomeMap/Info.txt", attributes.ToArray());
+                                } catch {
+                                    Debug.LOG("GeneratePQSMaps", "Couldn't generate BiomeMap/Info.txt");
                                 }
-                                File.WriteAllLines(exportFolder + subfolder + "BiomeMap/Info.txt", attributes.ToArray());
                             }
 
                             if (satelliteAny)
@@ -588,7 +597,7 @@ namespace SigmaCartographerPlugin
                         }
                         catch (Exception e)
                         {
-                            Debug.LOG(e.Message + "\n" + e.StackTrace);
+                            Debug.LOG("TRAPPED: " + e.Message + "\n" + e.StackTrace);
                             return;
                         }
                     }
@@ -597,8 +606,10 @@ namespace SigmaCartographerPlugin
             }
 
             // Close the Renderer
-            pqs.isBuildingMaps = false;
-            pqs.isFakeBuild = false;
+            if (pqs != null) {
+                pqs.isBuildingMaps = false;
+                pqs.isFakeBuild = false;
+            }
         }
 
         internal static void ExportPQSMap(ref Texture2D texture, string folder, string fileName)
